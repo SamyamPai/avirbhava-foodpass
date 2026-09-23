@@ -34,7 +34,7 @@ function Shell({ children }) {
           <img src="/branding/clouds.png" alt="CLOUDS" className="header-clouds" />
           <div className="header-copy">
             <strong>CLOUDS</strong>
-            <span>Avirbhava'26</span>
+            <span>Avirbhava'26 · FoodPass</span>
           </div>
         </Link>
       </header>
@@ -75,7 +75,7 @@ function Home() {
         <div className="hero">
           <div className="hero-copy">
             <div className="eyebrow">CLOUDS ASSOCIATION · PRESENTS</div>
-            <h1>Avirbhava'26<br /><span>FoodPass.</span></h1>
+            <h1>Avirbhava'26<br /><span></span></h1>
             <p>
               Your digital food pass for the event. Register with your USN,
               check your approval, and show your QR code when food is served.
