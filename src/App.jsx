@@ -34,7 +34,7 @@ function Shell({ children }) {
           <img src="/branding/clouds.png" alt="CLOUDS" className="header-clouds" />
           <div className="header-copy">
             <strong>CLOUDS</strong>
-            <span>Avirbhava'26 · FoodPass</span>
+            <span>Avirbhava'26</span>
           </div>
         </Link>
       </header>
