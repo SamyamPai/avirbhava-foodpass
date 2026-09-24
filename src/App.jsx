@@ -1575,7 +1575,7 @@ function ScannerPage() {
       } catch {}
 
       const { data, error } = await supabase.rpc(
-        "scanner_redeem_qr",
+        "redeem_qr",
         {
           p_token: staff.token,
           p_qr_token: decodedText,
