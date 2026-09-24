@@ -24,6 +24,11 @@ body,
   color: var(--text);
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   font-family:
     Inter,
@@ -73,6 +78,7 @@ a {
   top: 0;
   background: rgba(10, 12, 13, 0.88);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 10;
 }
 
@@ -555,6 +561,16 @@ select:focus {
   display: grid;
   place-items: center;
   gap: 8px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.qr-card canvas,
+.qr-card svg,
+.qr-card img {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 .qr-card b {
@@ -812,6 +828,8 @@ select:focus {
   background: #080c0d;
   border-radius: 16px;
   padding: 10px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .scanner-label {
@@ -823,14 +841,30 @@ select:focus {
 }
 
 .scanner-card #reader {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   border: 0 !important;
   background: #080c0d !important;
   border-radius: 11px;
   overflow: hidden;
 }
 
+.scanner-card #reader > div {
+  max-width: 100% !important;
+}
+
 .scanner-card #reader video {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: cover;
   border-radius: 10px !important;
+}
+
+.scanner-card #reader canvas {
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 .scan-hint {
@@ -847,6 +881,7 @@ select:focus {
   border-radius: 16px;
   overflow: hidden;
   min-height: 390px;
+  min-width: 0;
 }
 
 .log-head {
@@ -882,7 +917,10 @@ select:focus {
 
 .logs {
   max-height: 450px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .log-row {
@@ -921,6 +959,7 @@ select:focus {
 .log-main {
   display: grid;
   gap: 3px;
+  min-width: 0;
 }
 
 .log-main b {
@@ -938,6 +977,34 @@ select:focus {
   white-space: nowrap;
 }
 
+.log-meta {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: 92px;
+}
+
+.log-result {
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: #899593;
+}
+
+.log-result.valid {
+  color: var(--green);
+}
+
+.log-result.already_used {
+  color: var(--amber);
+}
+
+.log-result.invalid,
+.log-result.not_approved,
+.log-result.error {
+  color: var(--red);
+}
+
 .log-empty {
   padding: 30px 18px;
   color: #697573;
@@ -951,19 +1018,100 @@ select:focus {
 
 /* SCAN RESULT */
 
-.scan-result {
+.scan-result-layer {
   position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(440px, 88%);
+  inset: 0;
+  z-index: 1000;
+
+  pointer-events: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+
+  overflow: hidden;
+}
+
+.scan-result-backdrop {
+  position: absolute;
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.62);
+
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+
+  pointer-events: auto;
+}
+
+.scan-result {
+  position: relative;
+
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(78vh, 620px);
+  max-height: min(78dvh, 620px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
   padding: 24px;
+
   border-radius: 17px;
+
   background: #0d1314;
   border: 1px solid #344041;
+
   box-shadow: 0 35px 100px rgba(0, 0, 0, 0.65);
-  z-index: 100;
+
+  z-index: 1001;
+
+  pointer-events: auto;
+
   animation: resultIn 0.18s ease-out;
+}
+
+.scan-result-close {
+  position: absolute;
+
+  top: 10px;
+  right: 10px;
+
+  width: 36px;
+  height: 36px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #182021;
+  color: #d9e1de;
+
+  font-size: 24px;
+  line-height: 1;
+
+  display: grid;
+  place-items: center;
+
+  z-index: 10;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.scan-result-close:hover {
+  background: #293536;
+  transform: scale(1.05);
+}
+
+.scan-result-close:active {
+  transform: scale(0.95);
 }
 
 .scan-result.success {
@@ -977,12 +1125,12 @@ select:focus {
 @keyframes resultIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -46%) scale(0.98);
+    transform: scale(0.97);
   }
 
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -990,16 +1138,23 @@ select:focus {
   display: flex;
   gap: 13px;
   align-items: center;
+  padding-right: 38px;
 }
 
 .scan-result-top > span {
+  flex: 0 0 auto;
+
   width: 43px;
   height: 43px;
+
   border-radius: 50%;
+
   display: grid;
   place-items: center;
+
   font-size: 21px;
   font-weight: 900;
+
   background: #16201c;
   color: var(--green);
 }
@@ -1023,9 +1178,12 @@ select:focus {
 .verified-person {
   margin-top: 19px;
   padding: 14px;
+
   border: 1px solid #263131;
   border-radius: 10px;
+
   background: #101617;
+
   display: grid;
   gap: 4px;
 }
@@ -1075,6 +1233,7 @@ select:focus {
   inset: 0;
   background: #000b;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -1327,17 +1486,102 @@ select:focus {
     flex-wrap: wrap;
   }
 
+  .scannerpage {
+    width: min(94%, 1180px);
+    padding-top: 28px;
+  }
+
   .scanner-grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .scanner-card,
+  .log-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .scanner-card #reader {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .scanner-card #reader video,
+  .scanner-card #reader canvas {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
   }
 
   .log-card {
     min-height: 260px;
   }
 
+  .logs {
+    max-height: 450px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .footer-line {
     flex-direction: column;
     gap: 7px;
+  }
+
+  /*
+    Scan result is fixed to the viewport on mobile.
+    It does not become part of the scanner page flow.
+  */
+
+  .scan-result-layer {
+    position: fixed;
+    inset: 0;
+
+    width: 100vw;
+    height: 100dvh;
+
+    padding: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+  }
+
+  .scan-result {
+    width: min(440px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+
+    max-height: calc(100dvh - 32px);
+
+    margin: 0;
+    padding: 22px 18px;
+
+    border-radius: 17px;
+  }
+
+  .scan-result-top {
+    padding-right: 36px;
+  }
+
+  .scan-result-top h3 {
+    font-size: 21px;
+  }
+
+  .scan-result-close {
+    top: 9px;
+    right: 9px;
+
+    width: 36px;
+    height: 36px;
+
+    font-size: 23px;
   }
 }
 
@@ -1398,7 +1642,8 @@ select:focus {
 
   .brand-strip {
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
   }
 
   .brand-strip-divider {
@@ -1407,10 +1652,22 @@ select:focus {
 
   .brand-strip span {
     font-size: 8px;
+    letter-spacing: 1px;
   }
 
   .brand-strip small {
     font-size: 8px;
+  }
+
+  .brand-strip > div:not(.brand-strip-divider) {
+    min-width: 0;
+  }
+
+  .brand-strip > div:not(.brand-strip-divider) span,
+  .brand-strip > div:not(.brand-strip-divider) small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .hero h1 {
@@ -1452,10 +1709,105 @@ select:focus {
   }
 
   .scan-result {
-    padding: 20px;
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+
+    max-height: calc(100dvh - 20px);
+
+    padding: 20px 16px;
+  }
+
+  .scan-result-top {
+    gap: 10px;
+    padding-right: 40px;
+  }
+
+  .scan-result-top > span {
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+  }
+
+  .scan-result-top h3 {
+    font-size: 19px;
+  }
+
+  .verified-person {
+    margin-top: 15px;
+  }
+
+  .scan-result p {
+    font-size: 11px;
+  }
+
+  .scan-result-note {
+    font-size: 9px;
   }
 
   .food-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Extra protection for QR on small Android screens */
+  .qr-card {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .qr-card canvas,
+  .qr-card svg,
+  .qr-card img {
+    width: min(100%, 280px) !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* VERY SMALL PHONES */
+
+@media (max-width: 380px) {
+  .home {
+    width: 92%;
+  }
+
+  .page {
+    width: 94%;
+  }
+
+  .dashboard,
+  .scannerpage {
+    width: 94%;
+  }
+
+  .hero h1 {
+    font-size: 56px;
+    letter-spacing: -3px;
+  }
+
+  .event-panel {
+    padding: 18px;
+  }
+
+  .form-card {
+    padding: 18px;
+  }
+
+  .stats {
+    gap: 7px;
+  }
+
+  .stats > div {
+    padding: 12px;
+  }
+
+  .scan-result {
+    width: calc(100vw - 14px);
+    max-width: calc(100vw - 14px);
+    padding: 18px 14px;
+  }
+
+  .scan-result-close {
+    width: 34px;
+    height: 34px;
   }
 }
