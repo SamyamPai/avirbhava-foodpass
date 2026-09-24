@@ -24,12 +24,14 @@ body,
   color: var(--text);
 }
 
-html,
-body {
+html {
+  width: 100%;
   overflow-x: hidden;
 }
 
 body {
+  width: 100%;
+  overflow-x: hidden;
   font-family:
     Inter,
     ui-sans-serif,
@@ -38,6 +40,16 @@ body {
     "Segoe UI",
     sans-serif;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+body.scan-result-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+html.scan-result-open {
+  overflow: hidden;
 }
 
 button,
@@ -561,16 +573,6 @@ select:focus {
   display: grid;
   place-items: center;
   gap: 8px;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-.qr-card canvas,
-.qr-card svg,
-.qr-card img {
-  max-width: 100%;
-  height: auto;
-  display: block;
 }
 
 .qr-card b {
@@ -814,6 +816,11 @@ select:focus {
 
 /* SCANNER */
 
+.scannerpage {
+  position: relative;
+  isolation: isolate;
+}
+
 .scanner-grid {
   display: grid;
   grid-template-columns:
@@ -828,7 +835,7 @@ select:focus {
   background: #080c0d;
   border-radius: 16px;
   padding: 10px;
-  min-width: 0;
+  position: relative;
   overflow: hidden;
 }
 
@@ -842,8 +849,7 @@ select:focus {
 
 .scanner-card #reader {
   width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
+  max-width: 100%;
   border: 0 !important;
   background: #080c0d !important;
   border-radius: 11px;
@@ -855,16 +861,12 @@ select:focus {
 }
 
 .scanner-card #reader video {
+  display: block;
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
   object-fit: cover;
   border-radius: 10px !important;
-}
-
-.scanner-card #reader canvas {
-  max-width: 100% !important;
-  height: auto !important;
 }
 
 .scan-hint {
@@ -881,7 +883,6 @@ select:focus {
   border-radius: 16px;
   overflow: hidden;
   min-height: 390px;
-  min-width: 0;
 }
 
 .log-head {
@@ -959,7 +960,6 @@ select:focus {
 .log-main {
   display: grid;
   gap: 3px;
-  min-width: 0;
 }
 
 .log-main b {
@@ -1016,27 +1016,48 @@ select:focus {
   color: #ff8c95;
 }
 
-/* SCAN RESULT */
+/* =========================================================
+   SCAN RESULT MODAL
+   ========================================================= */
+
+/*
+   IMPORTANT:
+   This layer is deliberately fixed to the viewport.
+
+   It must not participate in the scanner grid or the logs
+   scrolling area.
+*/
 
 .scan-result-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
+  position: fixed !important;
+  inset: 0 !important;
+
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  z-index: 2147483000 !important;
 
   pointer-events: none;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden !important;
 
-  padding: 16px;
-
-  overflow: hidden;
+  isolation: isolate;
 }
 
 .scan-result-backdrop {
-  position: absolute;
-  inset: 0;
+  position: fixed !important;
+  inset: 0 !important;
+
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
 
   background: rgba(0, 0, 0, 0.62);
 
@@ -1044,17 +1065,30 @@ select:focus {
   -webkit-backdrop-filter: blur(4px);
 
   pointer-events: auto;
+
+  z-index: 1;
 }
 
 .scan-result {
-  position: relative;
+  position: fixed !important;
 
-  width: min(440px, calc(100vw - 32px));
-  max-height: min(78vh, 620px);
-  max-height: min(78dvh, 620px);
+  left: 50% !important;
+  top: 50% !important;
 
-  overflow-y: auto;
-  overflow-x: hidden;
+  right: auto !important;
+  bottom: auto !important;
+
+  margin: 0 !important;
+
+  width: min(440px, calc(100vw - 24px)) !important;
+
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - 40px) !important;
+
+  transform: translate(-50%, -50%) !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -1064,31 +1098,46 @@ select:focus {
   border-radius: 17px;
 
   background: #0d1314;
+
   border: 1px solid #344041;
 
-  box-shadow: 0 35px 100px rgba(0, 0, 0, 0.65);
+  box-shadow:
+    0 35px 100px rgba(0, 0, 0, 0.65);
 
-  z-index: 1001;
+  z-index: 2 !important;
+
+  animation: resultIn 0.18s ease-out;
 
   pointer-events: auto;
 
-  animation: resultIn 0.18s ease-out;
+  isolation: isolate;
 }
 
 .scan-result-close {
-  position: absolute;
+  position: absolute !important;
 
-  top: 10px;
-  right: 10px;
+  top: 10px !important;
+  right: 10px !important;
 
-  width: 36px;
-  height: 36px;
+  left: auto !important;
+  bottom: auto !important;
+
+  width: 36px !important;
+  height: 36px !important;
+
+  min-width: 36px;
+  min-height: 36px;
+
+  margin: 0 !important;
+  padding: 0 !important;
 
   border: 0;
+
   border-radius: 50%;
 
   background: #182021;
-  color: #d9e1de;
+
+  color: #cbd4d1;
 
   font-size: 24px;
   line-height: 1;
@@ -1096,22 +1145,21 @@ select:focus {
   display: grid;
   place-items: center;
 
-  z-index: 10;
+  z-index: 3 !important;
 
   cursor: pointer;
 
-  transition:
-    background 0.15s ease,
-    transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  touch-action: manipulation;
 }
 
 .scan-result-close:hover {
-  background: #293536;
-  transform: scale(1.05);
+  background: #273234;
 }
 
 .scan-result-close:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
 }
 
 .scan-result.success {
@@ -1125,12 +1173,12 @@ select:focus {
 @keyframes resultIn {
   from {
     opacity: 0;
-    transform: scale(0.97);
+    transform: translate(-50%, -47%) scale(0.97) !important;
   }
 
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1) !important;
   }
 }
 
@@ -1354,8 +1402,7 @@ select:focus {
   color: #91a5ba;
 }
 
-/* IMPORTANT:
-   Food preference summary used by the current App.jsx */
+/* FOOD PREFERENCE SUMMARY */
 
 .food-summary {
   display: grid;
@@ -1486,102 +1533,17 @@ select:focus {
     flex-wrap: wrap;
   }
 
-  .scannerpage {
-    width: min(94%, 1180px);
-    padding-top: 28px;
-  }
-
   .scanner-grid {
     grid-template-columns: 1fr;
-    width: 100%;
-    min-width: 0;
-  }
-
-  .scanner-card,
-  .log-card {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .scanner-card #reader {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .scanner-card #reader video,
-  .scanner-card #reader canvas {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
   }
 
   .log-card {
     min-height: 260px;
   }
 
-  .logs {
-    max-height: 450px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
   .footer-line {
     flex-direction: column;
     gap: 7px;
-  }
-
-  /*
-    Scan result is fixed to the viewport on mobile.
-    It does not become part of the scanner page flow.
-  */
-
-  .scan-result-layer {
-    position: fixed;
-    inset: 0;
-
-    width: 100vw;
-    height: 100dvh;
-
-    padding: 12px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    overflow: hidden;
-  }
-
-  .scan-result {
-    width: min(440px, calc(100vw - 24px));
-    max-width: calc(100vw - 24px);
-
-    max-height: calc(100dvh - 32px);
-
-    margin: 0;
-    padding: 22px 18px;
-
-    border-radius: 17px;
-  }
-
-  .scan-result-top {
-    padding-right: 36px;
-  }
-
-  .scan-result-top h3 {
-    font-size: 21px;
-  }
-
-  .scan-result-close {
-    top: 9px;
-    right: 9px;
-
-    width: 36px;
-    height: 36px;
-
-    font-size: 23px;
   }
 }
 
@@ -1708,18 +1670,53 @@ select:focus {
     font-size: 23px;
   }
 
+  /* MOBILE SCAN RESULT */
+
+  .scan-result-layer {
+    position: fixed !important;
+    inset: 0 !important;
+
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+
+    z-index: 2147483000 !important;
+  }
+
+  .scan-result-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+
   .scan-result {
-    width: calc(100vw - 20px);
-    max-width: calc(100vw - 20px);
+    position: fixed !important;
 
-    max-height: calc(100dvh - 20px);
+    left: 50% !important;
+    top: 50% !important;
 
-    padding: 20px 16px;
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+
+    max-height: calc(100dvh - 24px) !important;
+
+    padding: 20px;
+    padding-top: 24px;
+
+    border-radius: 15px;
+
+    transform: translate(-50%, -50%) !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
   }
 
   .scan-result-top {
     gap: 10px;
-    padding-right: 40px;
+    padding-right: 38px;
   }
 
   .scan-result-top > span {
@@ -1732,82 +1729,41 @@ select:focus {
     font-size: 19px;
   }
 
-  .verified-person {
-    margin-top: 15px;
-  }
+  .scan-result-close {
+    top: 8px !important;
+    right: 8px !important;
 
-  .scan-result p {
-    font-size: 11px;
-  }
+    width: 34px !important;
+    height: 34px !important;
 
-  .scan-result-note {
-    font-size: 9px;
+    min-width: 34px;
+    min-height: 34px;
+
+    font-size: 22px;
   }
 
   .food-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* Extra protection for QR on small Android screens */
-  .qr-card {
-    width: 100%;
-    padding: 14px;
-  }
-
-  .qr-card canvas,
-  .qr-card svg,
-  .qr-card img {
-    width: min(100%, 280px) !important;
-    max-width: 100% !important;
-    height: auto !important;
   }
 }
 
 /* VERY SMALL PHONES */
 
 @media (max-width: 380px) {
-  .home {
-    width: 92%;
-  }
-
-  .page {
-    width: 94%;
-  }
-
-  .dashboard,
-  .scannerpage {
-    width: 94%;
-  }
-
-  .hero h1 {
-    font-size: 56px;
-    letter-spacing: -3px;
-  }
-
-  .event-panel {
-    padding: 18px;
-  }
-
-  .form-card {
-    padding: 18px;
-  }
-
-  .stats {
-    gap: 7px;
-  }
-
-  .stats > div {
-    padding: 12px;
-  }
-
   .scan-result {
-    width: calc(100vw - 14px);
-    max-width: calc(100vw - 14px);
-    padding: 18px 14px;
+    width: calc(100vw - 14px) !important;
+    max-width: calc(100vw - 14px) !important;
+    max-height: calc(100dvh - 14px) !important;
+    padding: 17px;
   }
 
-  .scan-result-close {
-    width: 34px;
-    height: 34px;
+  .scan-result-top h3 {
+    font-size: 17px;
+  }
+
+  .scan-result-top > span {
+    width: 37px;
+    height: 37px;
+    font-size: 17px;
   }
 }
