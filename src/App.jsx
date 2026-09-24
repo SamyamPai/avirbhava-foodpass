@@ -1515,11 +1515,12 @@ function ScannerPage() {
 
   const [result, setResult] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [logsLoading, setLogsLoading] =
-    useState(true);
+  const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState("");
 
   const scannerRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const scanCallbackRef = useRef(null);
 
   const loadLogs = async () => {
     if (!staff?.token) return;
@@ -1527,12 +1528,9 @@ function ScannerPage() {
     setLogsLoading(true);
     setLogsError("");
 
-    const { data, error } = await supabase.rpc(
-      "scanner_get_logs",
-      {
-        p_token: staff.token,
-      }
-    );
+    const { data, error } = await supabase.rpc("scanner_get_logs", {
+      p_token: staff.token,
+    });
 
     if (error) {
       setLogsError(error.message);
@@ -1541,6 +1539,26 @@ function ScannerPage() {
     }
 
     setLogsLoading(false);
+  };
+
+  const closeResult = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    setResult(null);
+
+    setTimeout(() => {
+      if (scannerRef.current && scanCallbackRef.current) {
+        try {
+          scannerRef.current.render(
+            scanCallbackRef.current,
+            () => {}
+          );
+        } catch {}
+      }
+    }, 300);
   };
 
   useEffect(() => {
@@ -1589,33 +1607,65 @@ function ScannerPage() {
           message: error.message,
         });
       } else {
-        setResult(data);
+        const scanResult = String(
+          data?.result || ""
+        ).toUpperCase();
+
+        setResult({
+          ...data,
+
+          // VALID = successfully verified
+          // ALREADY_USED = valid pass but already redeemed
+          // NOT_APPROVED / INVALID / UNAUTHORIZED = not valid
+          success: scanResult === "VALID",
+
+          title:
+            scanResult === "VALID"
+              ? "Verified"
+              : scanResult === "ALREADY_USED"
+              ? "Already Redeemed"
+              : scanResult === "NOT_APPROVED"
+              ? "Not Approved"
+              : scanResult === "UNAUTHORIZED"
+              ? "Unauthorized"
+              : "Not Verified",
+        });
       }
 
       await loadLogs();
 
-      setTimeout(() => {
-        if (scannerRef.current) {
-          try {
-            scannerRef.current.render(
-              onScanSuccess,
-              () => {}
-            );
-          } catch {}
-        }
-      }, 1500);
+      // Automatically close after 5 seconds.
+      closeTimerRef.current = setTimeout(() => {
+        closeResult();
+      }, 5000);
     };
 
-    scanner.render(onScanSuccess, () => {});
+    scanCallbackRef.current = onScanSuccess;
+
+    scanner.render(
+      onScanSuccess,
+      () => {}
+    );
 
     return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+
       try {
         scanner.clear();
       } catch {}
+
+      scannerRef.current = null;
+      scanCallbackRef.current = null;
     };
   }, [staff, navigate]);
 
   const logout = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+
     try {
       scannerRef.current?.clear();
     } catch {}
@@ -1671,6 +1721,7 @@ function ScannerPage() {
             <div className="log-head">
               <div>
                 <b>Scan Logs</b>
+
                 <span>
                   Recent FoodPass verification
                 </span>
@@ -1706,13 +1757,18 @@ function ScannerPage() {
                 )}
 
               {!logsLoading &&
-                logs.map((log) => (
+                logs.map((log, index) => (
                   <div
                     className="log-row"
-                    key={log.id}
+                    key={
+                      log.id ||
+                      `${log.scanned_at}-${index}`
+                    }
                   >
                     <div
-                      className={`log-dot ${log.result}`}
+                      className={`log-dot ${
+                        log.result || ""
+                      }`}
                     />
 
                     <div className="log-main">
@@ -1724,6 +1780,7 @@ function ScannerPage() {
 
                       <span>
                         {log.usn || "No USN"}
+
                         {log.year
                           ? ` · Year ${log.year}`
                           : ""}
@@ -1751,9 +1808,21 @@ function ScannerPage() {
                 : "failure"
             }`}
           >
+            {/* CLOSE BUTTON */}
+            <button
+              type="button"
+              className="scan-result-close"
+              onClick={closeResult}
+              aria-label="Close scan result"
+            >
+              ×
+            </button>
+
             <div className="scan-result-top">
               <span>
-                {result.success ? "✓" : "!"}
+                {result.success
+                  ? "✓"
+                  : "!"}
               </span>
 
               <div>
@@ -1762,26 +1831,29 @@ function ScannerPage() {
                 </small>
 
                 <h3>
-                  {result.success
-                    ? "Verified"
-                    : result.title ||
-                      "Not Verified"}
+                  {result.title ||
+                    (result.success
+                      ? "Verified"
+                      : "Not Verified")}
                 </h3>
               </div>
             </div>
 
-            {result.full_name && (
+            {result.name && (
               <div className="verified-person">
-                <b>{result.full_name}</b>
+                <b>{result.name}</b>
 
                 <span>
                   {result.usn || ""}
+
                   {result.year
                     ? ` · Year ${result.year}`
                     : ""}
+
                   {result.section
                     ? ` · Section ${result.section}`
                     : ""}
+
                   {result.food_preference
                     ? ` · ${
                         result.food_preference ===
@@ -1799,7 +1871,8 @@ function ScannerPage() {
             )}
 
             <div className="scan-result-note">
-              This result will close automatically.
+              This result will close automatically
+              in 5 seconds.
             </div>
           </div>
         )}
