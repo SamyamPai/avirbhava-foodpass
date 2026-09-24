@@ -54,7 +54,7 @@ function Shell({ children }) {
 
           <div className="header-copy">
             <strong>CLOUDS</strong>
-            <span>Avirbhava'26 · FoodPass</span>
+            <span>Avirbhava'26</span>
           </div>
         </Link>
       </header>
@@ -181,7 +181,7 @@ function Register() {
     food: "",
   });
 
-  const USN_RE = /^[0-9]{1,2}SF[0-9]{2}CS[0-9]{3}$/i;
+  const USN_RE = /^[0-9]SF[0-9]{2}CS[0-9]{3}$/i;
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -278,11 +278,17 @@ function Register() {
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    usn: e.target.value.toUpperCase(),
+                    usn: e.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9]/g, "")
+                      .slice(0, 10),
                   })
                 }
-                placeholder="4SF24CS001"
-                maxLength={9}
+                placeholder="4SF24CS181"
+                maxLength={10}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </label>
 
@@ -372,26 +378,45 @@ function Status() {
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState(null);
 
+  const USN_RE = /^[0-9]SF[0-9]{2}CS[0-9]{3}$/i;
+
   const check = async (e) => {
     e.preventDefault();
+
+    const cleanUSN = usn.trim().toUpperCase();
+
+    if (!USN_RE.test(cleanUSN)) {
+      setData({
+        success: false,
+        message: "Invalid USN. Please enter a valid CS USN such as 4SF24CS181.",
+      });
+      return;
+    }
 
     setBusy(true);
     setData(null);
 
-    const { data, error } = await supabase.rpc("get_student_status", {
-      p_usn: usn.trim().toUpperCase(),
-    });
+    try {
+      const { data, error } = await supabase.rpc("get_student_status", {
+        p_usn: cleanUSN,
+      });
 
-    setBusy(false);
-
-    setData(
-      error
-        ? {
-            success: false,
-            message: error.message,
-          }
-        : data
-    );
+      setData(
+        error
+          ? {
+              success: false,
+              message: error.message,
+            }
+          : data
+      );
+    } catch (error) {
+      setData({
+        success: false,
+        message: error?.message || "Unable to check status. Please try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -415,10 +440,18 @@ function Status() {
                 required
                 value={usn}
                 onChange={(e) =>
-                  setUsn(e.target.value.toUpperCase())
+                  setUsn(
+                    e.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9]/g, "")
+                      .slice(0, 10)
+                  )
                 }
-                placeholder="Enter your USN"
-                maxLength={9}
+                placeholder="4SF24CS181"
+                maxLength={10}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </label>
 
@@ -837,6 +870,21 @@ function Admin() {
       return;
     }
 
+    if (addForm.type === "student") {
+      const cleanUSN = addForm.usn.trim().toUpperCase();
+      const usnPattern = /^[0-9]SF[0-9]{2}CS[0-9]{3}$/i;
+
+      if (!usnPattern.test(cleanUSN)) {
+        setError("Invalid USN. Please enter a valid CS USN such as 4SF24CS181.");
+        return;
+      }
+
+      if (!addForm.year || !addForm.section || !addForm.food) {
+        setError("Year, section and food preference are required for students.");
+        return;
+      }
+    }
+
     setWorking("add");
     setError("");
 
@@ -907,6 +955,34 @@ function Admin() {
     (s) => s.redeemed
   ).length;
 
+  const foodTotalVeg = students.filter(
+    (s) => s.person_type === "student" && s.food_preference === "veg"
+  ).length;
+
+  const foodTotalNonVeg = students.filter(
+    (s) => s.person_type === "student" && s.food_preference === "non-veg"
+  ).length;
+
+  const yearSectionFoodCounts = [1, 2, 3, 4].map((year) => ({
+    year,
+    sections: ["A", "B", "C", "D"].map((section) => {
+      const group = students.filter(
+        (s) =>
+          s.person_type === "student" &&
+          Number(s.year) === year &&
+          String(s.section || "").toUpperCase() === section
+      );
+
+      return {
+        section,
+        veg: group.filter((s) => s.food_preference === "veg").length,
+        nonVeg: group.filter(
+          (s) => s.food_preference === "non-veg"
+        ).length,
+      };
+    }),
+  }));
+
   return (
     <Shell>
       <div className="dashboard">
@@ -967,6 +1043,37 @@ function Admin() {
             <span>Redeemed</span>
             <b>{redeemed}</b>
           </div>
+        </div>
+
+        <div className="food-summary">
+          <div>
+            <b>{foodTotalVeg}</b>
+            <span>Total Veg</span>
+          </div>
+          <div>
+            <b>{foodTotalNonVeg}</b>
+            <span>Total Non-Veg</span>
+          </div>
+        </div>
+
+        <div className="year-food-summary">
+          {yearSectionFoodCounts.map((yearData) => (
+            <div className="year-food-group" key={yearData.year}>
+              <div className="year-food-title">
+                Year {yearData.year}
+              </div>
+
+              <div className="year-food-grid">
+                {yearData.sections.map((item) => (
+                  <div className="year-food-cell" key={item.section}>
+                    <b>Section {item.section}</b>
+                    <span>Veg: {item.veg}</span>
+                    <small>Non-Veg: {item.nonVeg}</small>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="filters">
@@ -1219,10 +1326,17 @@ function Admin() {
                       onChange={(e) =>
                         setAddForm({
                           ...addForm,
-                          usn: e.target.value.toUpperCase(),
+                          usn: e.target.value
+                            .toUpperCase()
+                            .replace(/[^A-Z0-9]/g, "")
+                            .slice(0, 10),
                         })
                       }
-                      maxLength={9}
+                      maxLength={10}
+                      placeholder="4SF24CS181"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
                     />
                   </label>
 
