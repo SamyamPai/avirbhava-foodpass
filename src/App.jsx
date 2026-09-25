@@ -3,6 +3,7 @@ import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import { QRCodeCanvas } from "qrcode.react";
 import { Html5QrcodeScanner } from "html5-qrcode";
+import { Analytics } from "@vercel/analytics/react";
 
 const BRAND = {
   college: "Sahyadri College of Engineering & Management",
@@ -1893,27 +1894,30 @@ function ScannerRoute() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/status" element={<Status />} />
+    <>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/status" element={<Status />} />
 
-      <Route
-        path="/admin"
-        element={<StaffLogin role="admin" />}
-      />
+        <Route
+          path="/admin"
+          element={<StaffLogin role="admin" />}
+        />
 
-      <Route
-        path="/admin/dashboard"
-        element={<Admin />}
-      />
+        <Route
+          path="/admin/dashboard"
+          element={<Admin />}
+        />
 
-      <Route
-        path="/scanner"
-        element={<ScannerRoute />}
-      />
+        <Route
+          path="/scanner"
+          element={<ScannerRoute />}
+        />
 
-      <Route path="*" element={<Home />} />
-    </Routes>
+        <Route path="*" element={<Home />} />
+      </Routes>
+      <Analytics />
+    </>
   );
 }
