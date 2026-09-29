@@ -122,16 +122,14 @@ function Register() {
   const normalizeCollegeEmail = (value) =>
     String(value ?? "")
       .normalize("NFKC")
-      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+      .replace(/\s+/g, "")
       .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .replace(/\.$/, "");
   const isCollegeEmail = (value) => {
     const email = normalizeCollegeEmail(value);
-    const at = email.lastIndexOf("@");
-    if (at <= 0 || at !== email.indexOf("@")) return false;
-    const local = email.slice(0, at);
-    const domain = email.slice(at + 1);
-    return local.length > 0 && domain === "sahyadri.edu.in";
+    return /^[a-z0-9._%+-]+@sahyadri\.edu\.in$/i.test(email);
   };
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -175,7 +173,7 @@ function Register() {
       <p className="muted">Use your college details and your official Sahyadri email.</p>
       <form onSubmit={submit}>
         <label>Full name<input required value={form.name} onChange={e => setForm({...form,name:e.target.value})} placeholder="Your full name" /></label>
-        <label>College Email<input required type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck="false" value={form.email} onChange={e => setForm({...form,email:e.target.value})} placeholder="name@sahyadri.edu.in" /></label>
+        <label>College Email<input required type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck="false" value={form.email} onChange={e => setForm({...form,email:e.target.value})} onBlur={e => setForm({...form,email:normalizeCollegeEmail(e.target.value)})} placeholder="name@sahyadri.edu.in" /></label>
         <label>USN<input required value={form.usn} onChange={e => setForm({...form,usn:e.target.value.toUpperCase()})} placeholder="4SF24CS001" /></label>
         <div className="two-fields"><label>Year<select required value={form.year} onChange={e => setForm({...form,year:e.target.value})}>
           <option value="">Select year</option><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option>
