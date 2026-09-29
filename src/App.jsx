@@ -116,26 +116,23 @@ function Home() {
   );
 }
 
-function normalizeCollegeEmail(value = "") {
-  return String(value)
-    .normalize("NFKC")
-    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
-    .replace(/\s+/g, "")
-    .trim()
-    .toLowerCase();
-}
-
-function isValidCollegeEmail(value) {
-  const email = normalizeCollegeEmail(value);
-
-  // The ONLY domain requirement is @sahyadri.edu.in.
-  // This accepts addresses such as samyam.p.cs24@sahyadri.edu.in.
-  return /^[^\s@]+@sahyadri\.edu\.in$/i.test(email);
-}
-
 function Register() {
   const [form, setForm] = useState({ name: "", email: "", usn: "", year: "", section: "", food: "" });
   const USN_RE = /^[0-9]{1,2}SF[0-9]{2}CS[0-9]{3}$/i;
+  const normalizeCollegeEmail = (value) =>
+    String(value ?? "")
+      .normalize("NFKC")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .trim()
+      .toLowerCase();
+  const isCollegeEmail = (value) => {
+    const email = normalizeCollegeEmail(value);
+    const at = email.lastIndexOf("@");
+    if (at <= 0 || at !== email.indexOf("@")) return false;
+    const local = email.slice(0, at);
+    const domain = email.slice(at + 1);
+    return local.length > 0 && domain === "sahyadri.edu.in";
+  };
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
@@ -143,7 +140,7 @@ function Register() {
     e.preventDefault();
     setBusy(true); setMsg(null);
     const cleanEmail = normalizeCollegeEmail(form.email);
-    if (!isValidCollegeEmail(cleanEmail)) {
+    if (!isCollegeEmail(cleanEmail)) {
       setBusy(false);
       setMsg({ bad: true, text: "Please use your Sahyadri college email ending with @sahyadri.edu.in." });
       return;
@@ -178,11 +175,7 @@ function Register() {
       <p className="muted">Use your college details and your official Sahyadri email.</p>
       <form onSubmit={submit}>
         <label>Full name<input required value={form.name} onChange={e => setForm({...form,name:e.target.value})} placeholder="Your full name" /></label>
-        <label>College Email<input required type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" autoComplete="email" value={form.email} onChange={e => {
-            const value = e.target.value;
-            setForm({...form, email: value});
-            setMsg(null);
-          }} placeholder="name@sahyadri.edu.in" /></label>
+        <label>College Email<input required type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck="false" value={form.email} onChange={e => setForm({...form,email:e.target.value})} placeholder="name@sahyadri.edu.in" /></label>
         <label>USN<input required value={form.usn} onChange={e => setForm({...form,usn:e.target.value.toUpperCase()})} placeholder="4SF24CS001" /></label>
         <div className="two-fields"><label>Year<select required value={form.year} onChange={e => setForm({...form,year:e.target.value})}>
           <option value="">Select year</option><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option>
@@ -283,6 +276,18 @@ function Admin() {
     setRows(Array.isArray(data)?data:[]);setLoading(false);
   };
   useEffect(()=>{load();},[]);
+  const normalizeAdminEmail = (value) =>
+    String(value ?? "")
+      .normalize("NFKC")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .trim()
+      .toLowerCase();
+  const isAdminCollegeEmail = (value) => {
+    const email = normalizeAdminEmail(value);
+    const at = email.lastIndexOf("@");
+    if (at <= 0 || at !== email.indexOf("@")) return false;
+    return email.slice(at + 1) === "sahyadri.edu.in";
+  };
   const sendQrEmail = async (student) => {
     if (!student?.email) {
       setError("No college email is saved for this student. Add the email first.");
@@ -298,8 +303,8 @@ function Admin() {
     setWorking(null);
   };
   const saveEmail = async () => {
-    const clean = normalizeCollegeEmail(emailValue);
-    if (!isValidCollegeEmail(clean)) { setEmailMessage("Use a valid @sahyadri.edu.in email address."); return; }
+    const clean = normalizeAdminEmail(emailValue);
+    if (!isAdminCollegeEmail(clean)) { setEmailMessage("Use a valid @sahyadri.edu.in email address."); return; }
     setEmailBusy(true); setEmailMessage("");
     const { data, error } = await supabase.rpc("admin_update_student_email", { p_token: staff.token, p_student_id: emailStudent.id, p_email: clean });
     if (error || !data?.success) { setEmailMessage(error?.message || data?.message || "Could not save email."); setEmailBusy(false); return; }
@@ -328,15 +333,7 @@ function Admin() {
     setWorking(null);
   };
   const reject=async id=>{setWorking(id);const {data,error}=await supabase.rpc("admin_reject_student",{p_token:staff.token,p_student_id:id});if(error||data?.success===false)setError(error?.message||data?.message||"Rejection failed.");else setRows(r=>r.map(x=>x.id===id?{...x,status:"rejected"}:x));setWorking(null);};
-  const addPerson=async()=>{
-    setWorking("add");
-    setError("");
-    if(addForm.type==="student" && !isValidCollegeEmail(addForm.email)){
-      setError("Use a valid @sahyadri.edu.in college email.");
-      setWorking(null);
-      return;
-    }
-    const {data,error}=await supabase.rpc("admin_add_person",{p_token:staff.token,p_person_type:addForm.type,p_full_name:addForm.name,p_email:addForm.type==="student"?addForm.email:null,p_usn:addForm.type==="student"?addForm.usn:null,p_year:addForm.type==="student"?Number(addForm.year):null,p_section:addForm.type==="student"?addForm.section:null,p_food_preference:addForm.type==="student"?addForm.food:null,p_status:"pending"});if(error||!data?.success)setError(error?.message||data?.message||"Could not add user.");else{setShowAdd(false);setAddForm({type:"student",name:"",email:"",usn:"",year:"",section:"",food:""});await load();}setWorking(null);};
+  const addPerson=async()=>{setWorking("add");setError("");const {data,error}=await supabase.rpc("admin_add_person",{p_token:staff.token,p_person_type:addForm.type,p_full_name:addForm.name,p_email:addForm.type==="student"?addForm.email:null,p_usn:addForm.type==="student"?addForm.usn:null,p_year:addForm.type==="student"?Number(addForm.year):null,p_section:addForm.type==="student"?addForm.section:null,p_food_preference:addForm.type==="student"?addForm.food:null,p_status:"pending"});if(error||!data?.success)setError(error?.message||data?.message||"Could not add user.");else{setShowAdd(false);setAddForm({type:"student",name:"",email:"",usn:"",year:"",section:"",food:""});await load();}setWorking(null);};
   const remove=async student=>{
     if(!window.confirm(`Delete ${student.full_name} (${student.usn}) permanently?`))return;
     setWorking(`delete-${student.id}`);const {data,error}=await supabase.rpc("admin_delete_student",{p_token:staff.token,p_student_id:student.id});
