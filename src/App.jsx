@@ -119,26 +119,24 @@ function Home() {
 function Register() {
   const [form, setForm] = useState({ name: "", email: "", usn: "", year: "", section: "", food: "" });
   const USN_RE = /^[0-9]{1,2}SF[0-9]{2}CS[0-9]{3}$/i;
-  const normalizeCollegeEmail = (value) =>
-    String(value ?? "")
+  const EMAIL_RE = /^[^\s@]+@sahyadri\.edu\.in$/i;
+
+  const normalizeEmail = (value) =>
+    String(value || "")
       .normalize("NFKC")
-      .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
-      .replace(/\s+/g, "")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .trim()
-      .toLowerCase()
-      .replace(/\.$/, "");
-  const isCollegeEmail = (value) => {
-    const email = normalizeCollegeEmail(value);
-    return /^[a-z0-9._%+-]+@sahyadri\.edu\.in$/i.test(email);
-  };
+      .replace(/\s+/g, "")
+      .replace(/[.,;:]+$/, "")
+      .toLowerCase();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true); setMsg(null);
-    const cleanEmail = normalizeCollegeEmail(form.email);
-    if (!isCollegeEmail(cleanEmail)) {
+    const cleanEmail = normalizeEmail(form.email);
+    if (!EMAIL_RE.test(cleanEmail)) {
       setBusy(false);
       setMsg({ bad: true, text: "Please use your Sahyadri college email ending with @sahyadri.edu.in." });
       return;
@@ -173,7 +171,7 @@ function Register() {
       <p className="muted">Use your college details and your official Sahyadri email.</p>
       <form onSubmit={submit}>
         <label>Full name<input required value={form.name} onChange={e => setForm({...form,name:e.target.value})} placeholder="Your full name" /></label>
-        <label>College Email<input required type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck="false" value={form.email} onChange={e => setForm({...form,email:e.target.value})} onBlur={e => setForm({...form,email:normalizeCollegeEmail(e.target.value)})} placeholder="name@sahyadri.edu.in" /></label>
+        <label>College Email<input required type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" value={form.email} onChange={e => setForm({...form,email:normalizeEmail(e.target.value)})} placeholder="name@sahyadri.edu.in" /></label>
         <label>USN<input required value={form.usn} onChange={e => setForm({...form,usn:e.target.value.toUpperCase()})} placeholder="4SF24CS001" /></label>
         <div className="two-fields"><label>Year<select required value={form.year} onChange={e => setForm({...form,year:e.target.value})}>
           <option value="">Select year</option><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option>
@@ -274,18 +272,16 @@ function Admin() {
     setRows(Array.isArray(data)?data:[]);setLoading(false);
   };
   useEffect(()=>{load();},[]);
-  const normalizeAdminEmail = (value) =>
-    String(value ?? "")
+  const EMAIL_RE = /^[^\s@]+@sahyadri\.edu\.in$/i;
+
+  const normalizeEmail = (value) =>
+    String(value || "")
       .normalize("NFKC")
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .trim()
+      .replace(/\s+/g, "")
+      .replace(/[.,;:]+$/, "")
       .toLowerCase();
-  const isAdminCollegeEmail = (value) => {
-    const email = normalizeAdminEmail(value);
-    const at = email.lastIndexOf("@");
-    if (at <= 0 || at !== email.indexOf("@")) return false;
-    return email.slice(at + 1) === "sahyadri.edu.in";
-  };
   const sendQrEmail = async (student) => {
     if (!student?.email) {
       setError("No college email is saved for this student. Add the email first.");
@@ -301,8 +297,8 @@ function Admin() {
     setWorking(null);
   };
   const saveEmail = async () => {
-    const clean = normalizeAdminEmail(emailValue);
-    if (!isAdminCollegeEmail(clean)) { setEmailMessage("Use a valid @sahyadri.edu.in email address."); return; }
+    const clean = normalizeEmail(emailValue);
+    if (!EMAIL_RE.test(clean)) { setEmailMessage("Use a valid @sahyadri.edu.in email address."); return; }
     setEmailBusy(true); setEmailMessage("");
     const { data, error } = await supabase.rpc("admin_update_student_email", { p_token: staff.token, p_student_id: emailStudent.id, p_email: clean });
     if (error || !data?.success) { setEmailMessage(error?.message || data?.message || "Could not save email."); setEmailBusy(false); return; }
@@ -351,8 +347,8 @@ function Admin() {
       </div>)}
       {!loading&&!filtered.length&&<div className="empty">No students match the current filters.</div>}
     </div>
-    {showAdd&&<div className="modal-backdrop"><div className="modal"><div className="modal-head"><div><div className="eyebrow">ADMIN / ADD USER</div><h3>Add event user</h3></div><button className="close" onClick={()=>setShowAdd(false)}>×</button></div><div className="type-tabs"><button className={addForm.type==="student"?"active":""} onClick={()=>setAddForm({...addForm,type:"student"})}>Student</button><button className={addForm.type==="teacher"?"active":""} onClick={()=>setAddForm({...addForm,type:"teacher"})}>Teacher</button></div><label>Full name<input value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})}/></label>{addForm.type==="student"?<div className="two-fields"><label>College Email<input type="email" value={addForm.email} onChange={e=>setAddForm({...addForm,email:e.target.value})} placeholder="name@sahyadri.edu.in"/></label><label>USN<input value={addForm.usn} onChange={e=>setAddForm({...addForm,usn:e.target.value.toUpperCase()})}/></label><label>Year<select value={addForm.year} onChange={e=>setAddForm({...addForm,year:e.target.value})}><option value="">Year</option><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option></select></label><label>Section<select value={addForm.section} onChange={e=>setAddForm({...addForm,section:e.target.value})}><option value="">Section</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></label><label>Food<select value={addForm.food} onChange={e=>setAddForm({...addForm,food:e.target.value})}><option value="">Food</option><option value="veg">Veg</option><option value="non-veg">Non-Veg</option></select></label></div>:<p className="muted">Teachers don't need a USN, year or section. They can be approved and issued a FoodPass QR.</p>}<button className="btn primary full" disabled={working==="add"} onClick={addPerson}>{working==="add"?"Adding…":"Add User"}</button></div></div>}
-    {emailStudent&&<div className="modal-backdrop"><div className="modal"><div className="modal-head"><div><div className="eyebrow">ADMIN / EMAIL</div><h3>{emailStudent.full_name}</h3></div><button className="close" onClick={()=>setEmailStudent(null)}>×</button></div><p className="muted">Save the student's Sahyadri college email. For an approved student, the QR email will be sent after saving.</p><label>College Email<input type="email" value={emailValue} onChange={e=>setEmailValue(e.target.value)} placeholder="name@sahyadri.edu.in"/></label>{emailMessage&&<div className="alert bad">{emailMessage}</div>}<button className="btn primary full" disabled={emailBusy} onClick={saveEmail}>{emailBusy?"Saving…":"Save Email"}</button></div></div>}
+    {showAdd&&<div className="modal-backdrop"><div className="modal"><div className="modal-head"><div><div className="eyebrow">ADMIN / ADD USER</div><h3>Add event user</h3></div><button className="close" onClick={()=>setShowAdd(false)}>×</button></div><div className="type-tabs"><button className={addForm.type==="student"?"active":""} onClick={()=>setAddForm({...addForm,type:"student"})}>Student</button><button className={addForm.type==="teacher"?"active":""} onClick={()=>setAddForm({...addForm,type:"teacher"})}>Teacher</button></div><label>Full name<input value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})}/></label>{addForm.type==="student"?<div className="two-fields"><label>College Email<input type="text" value={addForm.email} onChange={e=>setAddForm({...addForm,email:normalizeEmail(e.target.value)})} placeholder="name@sahyadri.edu.in"/></label><label>USN<input value={addForm.usn} onChange={e=>setAddForm({...addForm,usn:e.target.value.toUpperCase()})}/></label><label>Year<select value={addForm.year} onChange={e=>setAddForm({...addForm,year:e.target.value})}><option value="">Year</option><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option></select></label><label>Section<select value={addForm.section} onChange={e=>setAddForm({...addForm,section:e.target.value})}><option value="">Section</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></label><label>Food<select value={addForm.food} onChange={e=>setAddForm({...addForm,food:e.target.value})}><option value="">Food</option><option value="veg">Veg</option><option value="non-veg">Non-Veg</option></select></label></div>:<p className="muted">Teachers don't need a USN, year or section. They can be approved and issued a FoodPass QR.</p>}<button className="btn primary full" disabled={working==="add"} onClick={addPerson}>{working==="add"?"Adding…":"Add User"}</button></div></div>}
+    {emailStudent&&<div className="modal-backdrop"><div className="modal"><div className="modal-head"><div><div className="eyebrow">ADMIN / EMAIL</div><h3>{emailStudent.full_name}</h3></div><button className="close" onClick={()=>setEmailStudent(null)}>×</button></div><p className="muted">Save the student's Sahyadri college email. For an approved student, the QR email will be sent after saving.</p><label>College Email<input type="text" value={emailValue} onChange={e=>setEmailValue(normalizeEmail(e.target.value))} placeholder="name@sahyadri.edu.in"/></label>{emailMessage&&<div className="alert bad">{emailMessage}</div>}<button className="btn primary full" disabled={emailBusy} onClick={saveEmail}>{emailBusy?"Saving…":"Save Email"}</button></div></div>}
     {showQR&&<div className="modal-backdrop"><div className="modal qr-modal"><div className="modal-head"><div><div className="eyebrow">FOODPASS QR</div><h3>{showQR.full_name}</h3></div><button className="close" onClick={()=>setShowQR(null)}>×</button></div><div className="admin-qr"><QRCodeCanvas value={String(showQR.qr_token)} size={260}/><b>{showQR.person_type==="teacher"?"Teacher":"Student"}</b><span>{showQR.usn||showQR.foodpass_code||"FoodPass"}</span><small>{showQR.person_type==="student"&&showQR.food_preference?showQR.food_preference==="non-veg"?"Non-Veg":"Veg":"Event FoodPass"}</small></div></div></div>}
   </div></Shell>;
 }
