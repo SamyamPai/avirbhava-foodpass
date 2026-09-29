@@ -1,0 +1,2 @@
+[functions.send-foodpass-email]
+verify_jwt = false

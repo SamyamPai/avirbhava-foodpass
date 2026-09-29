@@ -1,5 +1,6 @@
 node_modules/
-dist/
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+supabase/functions/.env
+.DS_Store
