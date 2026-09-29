@@ -126,8 +126,7 @@ function Register() {
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .trim()
       .replace(/\s+/g, "")
-      .replace(/[.,;:]+$/, "")
-      .toLowerCase();
+            .toLowerCase();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
@@ -279,8 +278,7 @@ function Admin() {
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .trim()
       .replace(/\s+/g, "")
-      .replace(/[.,;:]+$/, "")
-      .toLowerCase();
+            .toLowerCase();
   const sendQrEmail = async (student) => {
     if (!student?.email) {
       setError("No email is saved for this student. Add the email first.");
